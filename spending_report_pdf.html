@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度消费开支对比报告 2023-2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Outfit', sans-serif;
+            box-sizing: border-box;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        body {
+            background: #ffffff;
+            margin: 0;
+            padding: 40px 60px;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+        .date-badge {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #374151;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+            page-break-inside: avoid;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-label {
+            color: #6b7280;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .stat-subtitle {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        .text-gray { color: #6b7280; }
+        .text-blue { color: #3b82f6; }
+        .text-purple { color: #8b5cf6; }
+        .text-green { color: #10b981; }
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .insight-card {
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 4px solid;
+            background: #f9fafb;
+        }
+        .insight-card.blue { border-color: #3b82f6; background: #eff6ff; }
+        .insight-card.gray { border-color: #6b7280; background: #f9fafb; }
+        .insight-card.purple { border-color: #8b5cf6; background: #faf5ff; }
+        .insight-card.teal { border-color: #14b8a6; background: #f0fdfa; }
+        .insight-card.green { border-color: #10b981; background: #f0fdf4; }
+        .insight-card.orange { border-color: #f59e0b; background: #fff7ed; }
+        .insight-icon { font-size: 24px; margin-bottom: 8px; }
+        .insight-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+        .insight-text {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        .footer {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 12px;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .budget-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-top: 20px;
+        }
+        .budget-item {
+            padding: 14px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 3px solid #6b7280;
+        }
+        .budget-item.blue { border-color: #3b82f6; }
+        .budget-item.purple { border-color: #8b5cf6; }
+        .budget-item.green { border-color: #10b981; }
+        .budget-name {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+        .budget-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .budget-monthly {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        .expense-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        .expense-table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .expense-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+        }
+        .expense-table tr:last-child td {
+            border-bottom: none;
+        }
+        .rank { font-family: 'JetBrains Mono', monospace; color: #9ca3af; }
+        .amount { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #374151; }
+        
+        @media print {
+            body { padding: 20px 30px; }
+            .card { page-break-inside: avoid; }
+            h1 { page-break-after: avoid; }
+            h2 { page-break-after: avoid; }
+            .stats-grid { page-break-inside: avoid; }
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>年度消费开支对比报告</h1>
+        <p class="subtitle">2023-2026 · 四年深度分析与财务规划 <span class="date-badge">生成日期：2025年12月31日</span></p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">2023年实际支出</div>
+                <div class="stat-value text-gray mono">¥131,658</div>
+                <div class="stat-subtitle">1,047笔交易 · 月均¥10,971</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2024年实际支出</div>
+                <div class="stat-value text-blue mono">¥128,617</div>
+                <div class="stat-subtitle">941笔交易 · 月均¥10,718 · 较2023▼2.3%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2025年实际支出</div>
+                <div class="stat-value text-purple mono">¥159,709</div>
+                <div class="stat-subtitle">981笔交易 · 月均¥13,309 · 较2024▲24.2%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2026年预算预估</div>
+                <div class="stat-value text-green mono">¥111,647</div>
+                <div class="stat-subtitle">预计月均¥9,304 · 较2025▼30.1%</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💡 核心洞察摘要</h2>
+            <div class="insight-grid">
+                <div class="insight-card gray">
+                    <div class="insight-title">📊 2023年：基准建立</div>
+                    <div class="insight-text">总支出¥131,658，月均¥10,971，建立了相对稳定的消费基准。住房支出占比最高（32.5%），其次是孩子（17.1%）和居家（15.5%）。</div>
+                </div>
+                <div class="insight-card blue">
+                    <div class="insight-title">📉 2024年：理性下降</div>
+                    <div class="insight-text">总支出下降2.3%至¥128,617，消费更加理性。礼金支出减少¥5,685，数码产品减少¥3,504，但孩子支出增加至¥27,761。</div>
+                </div>
+                <div class="insight-card purple">
+                    <div class="insight-title">📈 2025年：特殊增长</div>
+                    <div class="insight-text">总支出激增24.2%至¥159,709，主要因新增康复费用¥44,896（占28.1%）。去除此项后，实际经常性支出与往年持平。</div>
+                </div>
+                <div class="insight-card teal">
+                    <div class="insight-title">🎯 2026年：预算优化</div>
+                    <div class="insight-text">预计支出¥111,647，较2025年减少30.1%，回归理性水平。通过优化餐饮、交通、居家等可变支出，预计可节省¥48,062。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📈 四年支出趋势分析</h2>
+            <table class="expense-table">
+                <thead>
+                    <tr>
+                        <th>年份</th>
+                        <th>总支出</th>
+                        <th>同比变化</th>
+                        <th>月均支出</th>
+                        <th>交易笔数</th>
+                        <th>特点</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>2023年</strong></td>
+                        <td class="amount">¥131,658</td>
+                        <td class="amount text-gray">—</td>
+                        <td class="amount">¥10,971</td>
+                        <td class="amount">1,047</td>
+                        <td>基准年，支出稳定</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2024年</strong></td>
+                        <td class="amount">¥128,617</td>
+                        <td class="amount text-blue">▼2.3%</td>
+                        <td class="amount">¥10,718</td>
+                        <td class="amount">941</td>
+                        <td>消费理性下降</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2025年</strong></td>
+                        <td class="amount">¥159,709</td>
+                        <td class="amount text-purple">▲24.2%</td>
+                        <td class="amount">¥13,309</td>
+                        <td class="amount">981</td>
+                        <td>康复费用影响</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2026年（预估）</strong></td>
+                        <td class="amount">¥111,647</td>
+                        <td class="amount text-green">▼30.1%</td>
+                        <td class="amount">¥9,304</td>
+                        <td class="amount">—</td>
+                        <td>预算优化目标</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>🏠 主要类别支出变化</h2>
+            <table class="expense-table">
+                <thead>
+                    <tr>
+                        <th>类别</th>
+                        <th>2023年</th>
+                        <th>2024年</th>
+                        <th>2025年</th>
+                        <th>2026年预算</th>
+                        <th>趋势</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>住房</strong></td>
+                        <td class="amount">¥42,798</td>
+                        <td class="amount">¥39,204</td>
+                        <td class="amount">¥39,621</td>
+                        <td class="amount">¥39,621</td>
+                        <td>稳定</td>
+                    </tr>
+                    <tr>
+                        <td><strong>孩子</strong></td>
+                        <td class="amount">¥22,460</td>
+                        <td class="amount">¥27,761</td>
+                        <td class="amount">¥8,483</td>
+                        <td class="amount">¥8,500</td>
+                        <td>显著下降</td>
+                    </tr>
+                    <tr>
+                        <td><strong>居家</strong></td>
+                        <td class="amount">¥20,354</td>
+                        <td class="amount">¥8,987</td>
+                        <td class="amount">¥23,054</td>
+                        <td class="amount">¥18,443</td>
+                        <td>波动较大</td>
+                    </tr>
+                    <tr>
+                        <td><strong>餐饮</strong></td>
+                        <td class="amount">¥9,820</td>
+                        <td class="amount">¥11,192</td>
+                        <td class="amount">¥10,226</td>
+                        <td class="amount">¥9,203</td>
+                        <td>平稳下降</td>
+                    </tr>
+                    <tr>
+                        <td><strong>交通</strong></td>
+                        <td class="amount">¥7,336</td>
+                        <td class="amount">¥9,272</td>
+                        <td class="amount">¥8,369</td>
+                        <td class="amount">¥7,532</td>
+                        <td>小幅下降</td>
+                    </tr>
+                    <tr>
+                        <td><strong>保险</strong></td>
+                        <td class="amount">¥0</td>
+                        <td class="amount">¥1,880</td>
+                        <td class="amount">¥4,365</td>
+                        <td class="amount">¥5,000</td>
+                        <td>逐步增加</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="page-break"></div>
+
+        <div class="card">
+            <h2>💰 2026年预算明细</h2>
+            <div class="budget-grid">
+                <div class="budget-item blue">
+                    <div class="budget-name">🏠 住房（固定支出）</div>
+                    <div class="budget-amount mono">¥39,621</div>
+                    <div class="budget-monthly">月均 ¥3,302 · 占比35.5%</div>
+                </div>
+                <div class="budget-item blue">
+                    <div class="budget-name">🛡️ 保险（固定支出）</div>
+                    <div class="budget-amount mono">¥5,000</div>
+                    <div class="budget-monthly">月均 ¥417 · 占比4.5%</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">🏠 居家</div>
+                    <div class="budget-amount mono">¥18,443</div>
+                    <div class="budget-monthly">月均 ¥1,537 · 较2025▼20%</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">🍽️ 餐饮</div>
+                    <div class="budget-amount mono">¥9,203</div>
+                    <div class="budget-monthly">月均 ¥767 · 较2025▼10%</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">👶 孩子</div>
+                    <div class="budget-amount mono">¥8,500</div>
+                    <div class="budget-monthly">月均 ¥708 · 保持稳定</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">🚗 交通</div>
+                    <div class="budget-amount mono">¥7,532</div>
+                    <div class="budget-monthly">月均 ¥628 · 较2025▼10%</div>
+                </div>
+                <div class="budget-item green">
+                    <div class="budget-name">✈️ 旅游</div>
+                    <div class="budget-amount mono">¥5,000</div>
+                    <div class="budget-monthly">月均 ¥417 · 适度预算</div>
+                </div>
+                <div class="budget-item green">
+                    <div class="budget-name">💻 软件服务</div>
+                    <div class="budget-amount mono">¥2,500</div>
+                    <div class="budget-monthly">月均 ¥208 · 控制订阅</div>
+                </div>
+                <div class="budget-item">
+                    <div class="budget-name">📦 其他</div>
+                    <div class="budget-amount mono">¥15,848</div>
+                    <div class="budget-monthly">月均 ¥1,321 · 预留缓冲</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📋 2026年关键行动建议</h2>
+            <div class="insight-grid">
+                <div class="insight-card blue">
+                    <div class="insight-icon">1️⃣</div>
+                    <div class="insight-title">控制可变支出</div>
+                    <div class="insight-text"><strong>餐饮：</strong>控制在¥767/月，减少外卖频率，增加自己做饭。<strong>交通：</strong>控制在¥628/月，优化出行路线，选择公共交通。<strong>居家：</strong>控制在¥1,537/月，大额采购前多方比价。</div>
+                </div>
+                <div class="insight-card green">
+                    <div class="insight-icon">2️⃣</div>
+                    <div class="insight-title">建立储蓄计划</div>
+                    <div class="insight-text"><strong>月度储蓄目标：</strong>¥1,237元<br><strong>年度储蓄目标：</strong>¥14,848元<br><strong>应急基金：</strong>预留3-6月生活费（¥30,000-60,000）作为应急准备金。</div>
+                </div>
+                <div class="insight-card purple">
+                    <div class="insight-icon">3️⃣</div>
+                    <div class="insight-title">优化订阅服务</div>
+                    <div class="insight-text">2025年软件服务支出¥2,230，建议全面review所有订阅服务，保留必要的，取消不常用的，预计可节省30-40%。</div>
+                </div>
+                <div class="insight-card orange">
+                    <div class="insight-icon">4️⃣</div>
+                    <div class="insight-title">持续记账追踪</div>
+                    <div class="insight-text"><strong>每周：</strong>快速检查支出类别<br><strong>每月：</strong>review实际支出vs预算<br><strong>每季度：</strong>总结分析，及时调整消费习惯</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🎯 2026年财务展望</h2>
+            <div class="insight-grid">
+                <div class="insight-card green">
+                    <div class="insight-icon">💰</div>
+                    <div class="insight-title">预期节省</div>
+                    <div class="insight-text">较2025年节省¥48,062，这部分资金可用于：<br>• 增加储蓄投资<br>• 建立更完善的应急基金<br>• 子女教育基金储备<br>• 退休账户补充</div>
+                </div>
+                <div class="insight-card teal">
+                    <div class="insight-icon">📊</div>
+                    <div class="insight-title">风险提示</div>
+                    <div class="insight-text">该预算基于无一次性大额支出的假设。如有计划内大额支出（如医疗、教育、大件采购等），需从"其他"类别中预留或单独列项，避免预算超支。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 主要支出项目记录</h2>
+            <table class="expense-table">
+                <thead>
+                    <tr>
+                        <th>年度</th>
+                        <th>支出项目</th>
+                        <th>类别</th>
+                        <th>金额</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2023</td>
+                        <td>房贷（月供）</td>
+                        <td>住房</td>
+                        <td class="amount">¥3,350</td>
+                    </tr>
+                    <tr>
+                        <td>2023</td>
+                        <td>个人所得税</td>
+                        <td>居家</td>
+                        <td class="amount">¥6,135</td>
+                    </tr>
+                    <tr>
+                        <td>2024</td>
+                        <td>个人所得税</td>
+                        <td>居家</td>
+                        <td class="amount">¥6,135</td>
+                    </tr>
+                    <tr>
+                        <td>2024</td>
+                        <td>电视</td>
+                        <td>居家</td>
+                        <td class="amount">¥2,879</td>
+                    </tr>
+                    <tr>
+                        <td>2025</td>
+                        <td>景宝康复（一次性）</td>
+                        <td>康复</td>
+                        <td class="amount">¥26,496</td>
+                    </tr>
+                    <tr>
+                        <td>2025</td>
+                        <td>康复费用（一次性）</td>
+                        <td>康复</td>
+                        <td class="amount">¥18,400</td>
+                    </tr>
+                    <tr>
+                        <td>2025</td>
+                        <td>个人所得税</td>
+                        <td>居家</td>
+                        <td class="amount">¥6,135</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p><strong>数据来源：</strong>记账管理.xlsx · <strong>生成时间：</strong>2025年12月31日</p>
+            <p style="margin-top: 8px;"><strong>说明：</strong>本报告基于2023-2025年实际消费数据分析生成，2026年数据为预算预估。</p>
+            <p style="margin-top: 8px;"><strong>报告周期：</strong>2023年1月1日 - 2026年12月31日（四年对比分析）</p>
+        </div>
+    </div>
+</body>
+</html>

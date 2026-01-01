@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度消费开支对比 2023-2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Outfit', sans-serif;
+            box-sizing: border-box;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.125rem;
+            margin-bottom: 32px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .badge-gray { background: #f3f4f6; color: #374151; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-purple { background: #f3e8ff; color: #7c3aed; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px -1px rgba(0, 0, 0, 0.15);
+        }
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .stat-subtitle {
+            color: #9ca3af;
+            font-size: 0.75rem;
+        }
+        .text-gray { color: #6b7280; }
+        .text-blue { color: #3b82f6; }
+        .text-purple { color: #8b5cf6; }
+        .text-green { color: #10b981; }
+        .text-teal { color: #14b8a6; }
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-top: 20px;
+        }
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+        .expense-rank {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: #9ca3af;
+            margin-right: 12px;
+        }
+        .expense-info {
+            flex: 1;
+        }
+        .expense-name {
+            font-weight: 500;
+            color: #1f2937;
+            font-size: 0.9rem;
+        }
+        .expense-meta {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        .expense-amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .insight-card {
+            padding: 16px;
+            border-radius: 12px;
+            display: flex;
+            gap: 12px;
+        }
+        .insight-gray { background: #f9fafb; }
+        .insight-blue { background: #eff6ff; }
+        .insight-green { background: #f0fdf4; }
+        .insight-purple { background: #faf5ff; }
+        .insight-orange { background: #fff7ed; }
+        .insight-teal { background: #f0fdfa; }
+        .insight-icon { font-size: 1.5rem; }
+        .insight-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+        .insight-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        .footer {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-top: 48px;
+        }
+        .three-column {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .budget-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .budget-item {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 3px solid;
+        }
+        .budget-item.blue { border-color: #3b82f6; }
+        .budget-item.purple { border-color: #8b5cf6; }
+        .budget-item.green { border-color: #10b981; }
+        .budget-name {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .budget-amount {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .budget-monthly {
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.875rem; }
+            .stat-value { font-size: 1.5rem; }
+            .three-column { grid-template-columns: 1fr; }
+        }
+        .growth-indicator {
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        .growth-up { color: #10b981; }
+        .growth-down { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>年度消费开支对比</h1>
+        <p class="subtitle">2023-2026 · 四年深度分析与展望</p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">2023年实际 <span class="badge badge-gray">历史</span></div>
+                <div class="stat-value text-gray mono">¥131,658</div>
+                <div class="stat-subtitle">1047笔 · 月均 ¥10,971</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2024年实际 <span class="badge badge-blue">历史</span></div>
+                <div class="stat-value text-blue mono">¥128,617</div>
+                <div class="stat-subtitle">941笔 · 月均 ¥10,718 <span class="growth-down">▼2.3%</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2025年实际 <span class="badge badge-purple">历史</span></div>
+                <div class="stat-value text-purple mono">¥159,709</div>
+                <div class="stat-subtitle">981笔 · 月均 ¥13,309 <span class="growth-up">▲24.2%</span></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">2026年预估 <span class="badge badge-green">预算</span></div>
+                <div class="stat-value text-green mono">¥111,647</div>
+                <div class="stat-subtitle">预计月均 ¥9,304 <span class="growth-down">▼30.1%</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📈 四年支出趋势对比</h2>
+            <div class="chart-container">
+                <canvas id="yearlyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 月度支出趋势对比</h2>
+            <div class="chart-container">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 各类别支出对比</h2>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <div class="three-column">
+            <div class="card">
+                <h2>2023年主要支出 Top 8</h2>
+                <div id="expenses2023"></div>
+            </div>
+            <div class="card">
+                <h2>2024年主要支出 Top 8</h2>
+                <div id="expenses2024"></div>
+            </div>
+            <div class="card">
+                <h2>2025年主要支出 Top 8</h2>
+                <div id="expenses2025"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 2026年预算明细</h2>
+            <div class="budget-breakdown">
+                <div class="budget-item blue">
+                    <div class="budget-name">🏠 住房（固定）</div>
+                    <div class="budget-amount mono">¥39,621</div>
+                    <div class="budget-monthly">月均 ¥3,302</div>
+                </div>
+                <div class="budget-item blue">
+                    <div class="budget-name">🛡️ 保险（固定）</div>
+                    <div class="budget-amount mono">¥5,000</div>
+                    <div class="budget-monthly">月均 ¥417</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">🍽️ 餐饮</div>
+                    <div class="budget-amount mono">¥9,203</div>
+                    <div class="budget-monthly">月均 ¥767 ⬇10%</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">🚗 交通</div>
+                    <div class="budget-amount mono">¥7,532</div>
+                    <div class="budget-monthly">月均 ¥628 ⬇10%</div>
+                </div>
+                <div class="budget-item purple">
+                    <div class="budget-name">🏠 居家</div>
+                    <div class="budget-amount mono">¥18,443</div>
+                    <div class="budget-monthly">月均 ¥1,537 ⬇20%</div>
+                </div>
+                <div class="budget-item green">
+                    <div class="budget-name">👶 孩子</div>
+                    <div class="budget-amount mono">¥8,500</div>
+                    <div class="budget-monthly">月均 ¥708</div>
+                </div>
+                <div class="budget-item green">
+                    <div class="budget-name">✈️ 旅游</div>
+                    <div class="budget-amount mono">¥5,000</div>
+                    <div class="budget-monthly">月均 ¥417</div>
+                </div>
+                <div class="budget-item green">
+                    <div class="budget-name">💻 软件服务</div>
+                    <div class="budget-amount mono">¥2,500</div>
+                    <div class="budget-monthly">月均 ¥208</div>
+                </div>
+                <div class="budget-item">
+                    <div class="budget-name">📦 其他</div>
+                    <div class="budget-amount mono">¥15,848</div>
+                    <div class="budget-monthly">月均 ¥1,321</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💡 四年消费洞察</h2>
+            <div class="insight-grid">
+                <div class="insight-card insight-gray">
+                    <span class="insight-icon">📊</span>
+                    <div>
+                        <div class="insight-title">2023年：基准年</div>
+                        <div class="insight-text">总支出¥131,658，月均¥10,971，建立了一个相对稳定的消费基准</div>
+                    </div>
+                </div>
+                <div class="insight-card insight-blue">
+                    <span class="insight-icon">📉</span>
+                    <div>
+                        <div class="insight-title">2024年：略微下降</div>
+                        <div class="insight-text">总支出下降2.3%至¥128,617，礼金和数码产品支出减少，消费更加理性</div>
+                    </div>
+                </div>
+                <div class="insight-card insight-purple">
+                    <span class="insight-icon">📈</span>
+                    <div>
+                        <div class="insight-title">2025年：显著增长</div>
+                        <div class="insight-text">总支出激增24.2%至¥159,709，主要因康复费用新增支出¥44,896（一次性）</div>
+                    </div>
+                </div>
+                <div class="insight-card insight-teal">
+                    <span class="insight-icon">🎯</span>
+                    <div>
+                        <div class="insight-title">2026年：预算优化</div>
+                        <div class="insight-text">预计支出¥111,647，较2025年减少30%，回归理性，可增加储蓄投资</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💡 关键发现与趋势</h2>
+            <div class="insight-grid">
+                <div class="insight-card insight-green">
+                    <span class="insight-icon">🏠</span>
+                    <div>
+                        <div class="insight-title">固定支出稳定</div>
+                        <div class="insight-text">住房支出三年基本稳定（¥42,798→¥39,204→¥39,621），房贷保持在¥3,300/月左右</div>
+                    </div>
+                </div>
+                <div class="insight-card insight-orange">
+                    <span class="insight-icon">👶</span>
+                    <div>
+                        <div class="insight-title">育儿成本先降后降</div>
+                        <div class="insight-text">从2023年¥22,460降至2024年¥27,761，再到2025年¥8,483，可能是孩子长大了</div>
+                    </div>
+                </div>
+                <div class="insight-card insight-blue">
+                    <span class="insight-icon">🍽️</span>
+                    <div>
+                        <div class="insight-title">餐饮支出平稳</div>
+                        <div class="insight-text">三年餐饮支出稳定在¥9,800-¥10,200之间，月均约¥800-¥850，控制较好</div>
+                    </div>
+                </div>
+                <div class="insight-card insight-purple">
+                    <span class="insight-icon">💊</span>
+                    <div>
+                        <div class="insight-title">2025年特殊支出</div>
+                        <div class="insight-text">康复费用¥44,896是2025年增长主因，属于一次性大额支出，非常规情况</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📋 2026年行动建议</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                <div style="padding: 16px; background: #eff6ff; border-radius: 12px;">
+                    <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px;">1. 控制可变支出</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; line-height: 1.6;">
+                        餐饮控制在¥767/月（降10%），交通控制在¥628/月（降10%），居家控制在¥1,537/月（降20%）
+                    </div>
+                </div>
+                <div style="padding: 16px; background: #f0fdf4; border-radius: 12px;">
+                    <div style="font-weight: 600; color: #166534; margin-bottom: 8px;">2. 建立储蓄计划</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; line-height: 1.6;">
+                        每月储蓄¥1,237，年储蓄¥14,848；设立应急基金¥30,000-60,000（3-6月生活费）
+                    </div>
+                </div>
+                <div style="padding: 16px; background: #faf5ff; border-radius: 12px;">
+                    <div style="font-weight: 600; color: #7c3aed; margin-bottom: 8px;">3. 优化订阅服务</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; line-height: 1.6;">
+                        2025年软件服务¥2,230，建议review所有订阅，保留必要的，取消不常用的
+                    </div>
+                </div>
+                <div style="padding: 16px; background: #fff7ed; border-radius: 12px;">
+                    <div style="font-weight: 600; color: #9a3412; margin-bottom: 8px;">4. 持续记账追踪</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; line-height: 1.6;">
+                        每月review实际支出vs预算，季度总结，及时调整消费习惯，保持良好记账习惯
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>数据来源：记账管理.xlsx · 生成时间：2025年12月31日</p>
+            <p style="margin-top: 8px; font-size: 0.75rem;">注：2026年数据为预算预估，基于2023-2025年数据分析得出</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        // 四年总支出对比
+        const yearlyData = {
+            labels: ['2023年', '2024年', '2025年', '2026年（预估）'],
+            datasets: [{
+                label: '年度总支出',
+                data: [131658, 128617, 159709, 111647],
+                backgroundColor: [
+                    'rgba(107, 114, 128, 0.8)',
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)'
+                ],
+                borderColor: [
+                    '#6b7280',
+                    '#3b82f6',
+                    '#8b5cf6',
+                    '#10b981'
+                ],
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        };
+
+        // 月度数据
+        const monthlyData = {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+            datasets: [
+                {
+                    label: '2023年',
+                    data: [12745.86, 10650.85, 12518.53, 10004.95, 10288.50, 10229.63, 13067.38, 11015.85, 11397.04, 10756.84, 10432.30, 8550.63],
+                    borderColor: '#6b7280',
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: '2024年',
+                    data: [16340.06, 9732.45, 18672.14, 6944.48, 10955.53, 8977.29, 4951.69, 14329.82, 14367.80, 7571.02, 9026.24, 6748.85],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: '2025年',
+                    data: [11824.26, 11194.96, 14057.38, 5507.73, 10171.98, 11018.02, 26070.37, 14290.61, 6526.38, 9892.40, 32808.64, 6346.39],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        };
+
+        // 类别对比数据（2023-2025）
+        const categoryData = {
+            labels: ['住房', '餐饮', '交通', '居家', '孩子', '旅游', '保险', '软件服务'],
+            datasets: [
+                {
+                    label: '2023年',
+                    data: [42798, 9819.78, 7336.38, 20353.68, 22460.33, 0, 0, 3205.95],
+                    backgroundColor: 'rgba(107, 114, 128, 0.7)',
+                    borderColor: '#6b7280',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: '2024年',
+                    data: [39204, 11192.24, 9272.04, 8986.51, 27761.39, 7139, 1880, 1943.29],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: '2025年',
+                    data: [39620.82, 10225.50, 8368.82, 23054.05, 8483.06, 6312.46, 4364.60, 2230.36],
+                    backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                    borderColor: '#8b5cf6',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        };
+
+        const expenses2023 = [
+            ["房贷", 3350.00, "住房", "2023-12-01"],
+            ["房贷", 3267.00, "住房", "2023-01-01"],
+            ["小米手表", 999.00, "数码产品", "2023-12-09"],
+            ["AirPods耳机", 1299.00, "数码产品", "2023-12-09"],
+            ["手机", 2000.00, "数码产品", "2023-12-09"],
+            ["个人所得税", 6135.00, "居家", "2023-03-14"],
+            ["伙食费", 2100.00, "孩子", "2023-02-10"],
+            ["保教费", 3500.00, "孩子", "2023-01-16"]
+        ];
+
+        const expenses2024 = [
+            ["房贷", 3267.00, "住房", "2024-01-01"],
+            ["保教费", 3500.00, "孩子", "2024-01-16"],
+            ["个人所得税", 6135.00, "居家", "2024-03-14"],
+            ["伙食费", 2100.00, "孩子", "2024-02-10"],
+            ["红包", 2000.00, "父母", "2024-02-03"],
+            ["车险", 2107.00, "保险", "2024-05-26"],
+            ["电视", 2879.00, "居家", "2024-06-20"],
+            ["小米手表", 999.00, "数码产品", "2024-12-09"]
+        ];
+
+        const expenses2025 = [
+            ["景宝康复", 26496.00, "康复", "2025-11-21"],
+            ["康复费用", 18400.00, "康复", "2025-07-14"],
+            ["个人所得税", 6135.00, "居家", "2025-03-14"],
+            ["保教费", 3500.00, "孩子", "2025-01-16"],
+            ["房贷", 3267.00, "住房", "2025-01-01"],
+            ["房贷", 3129.00, "住房", "2025-12-01"],
+            ["房贷", 3129.00, "住房", "2025-11-01"],
+            ["房贷", 3129.00, "住房", "2025-10-01"]
+        ];
+
+        function formatCurrency(value) {
+            return '¥' + value.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function renderExpenses(containerId, expenses) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = expenses.map((item, index) => `
+                <div class="expense-item">
+                    <div style="display:flex;align-items:center;flex:1;">
+                        <span class="expense-rank">#${index + 1}</span>
+                        <div class="expense-info">
+                            <div class="expense-name">${item[0]}</div>
+                            <div class="expense-meta">${item[2]} · ${item[3]}</div>
+                        </div>
+                    </div>
+                    <span class="expense-amount mono">${formatCurrency(item[1])}</span>
+                </div>
+            `).join('');
+        }
+
+        // 四年总支出图
+        new Chart(document.getElementById('yearlyChart'), {
+            type: 'bar',
+            data: yearlyData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += formatCurrency(context.parsed.y);
+                                if (context.dataIndex === 1) {
+                                    label += ' (▼2.3%)';
+                                } else if (context.dataIndex === 2) {
+                                    label += ' (▲24.2%)';
+                                } else if (context.dataIndex === 3) {
+                                    label += ' (预估)';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + (value / 1000).toFixed(0) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 月度趋势图
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: monthlyData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + (value / 1000).toFixed(0) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 类别对比图
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: categoryData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '¥' + (value / 1000).toFixed(0) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 渲染支出列表
+        renderExpenses('expenses2023', expenses2023);
+        renderExpenses('expenses2024', expenses2024);
+        renderExpenses('expenses2025', expenses2025);
+    </script>
+</body>
+</html>
