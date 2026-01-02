@@ -1535,7 +1535,7 @@
         // ==================== AI聊天助手 ====================
         let chatMessages = [];
         let isChatOpen = false;
-        const QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+        const QWEN_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
         const CHAT_STORAGE_KEY = 'finance_chat_messages';
         const API_KEY_STORAGE = 'qwen_api_key';
 
@@ -1664,17 +1664,13 @@ ${JSON.stringify(currentFilters, null, 2)}`;
 
             const requestData = {
                 model: 'qwen-turbo',
-                input: {
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userMessage }
-                    ]
-                },
-                parameters: {
-                    temperature: 0.7,
-                    max_tokens: 1500,
-                    top_p: 0.9
-                }
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userMessage }
+                ],
+                temperature: 0.7,
+                max_tokens: 1500,
+                top_p: 0.9
             };
 
             console.log('📤 发送API请求到:', QWEN_API_URL);
@@ -1697,6 +1693,12 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                     console.error('❌ API错误响应:', errorData);
 
                     let errorDetail = `HTTP ${response.status}`;
+                    if (errorData.error && errorData.error.message) {
+                        errorDetail += `\n${errorData.error.message}`;
+                    }
+                    if (errorData.error && errorData.error.code) {
+                        errorDetail += `\n错误码: ${errorData.error.code}`;
+                    }
                     if (errorData.message) {
                         errorDetail += `\n${errorData.message}`;
                     }
@@ -1710,12 +1712,12 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 const data = await response.json();
                 console.log('✅ API响应成功:', data);
 
-                if (!data.output || !data.output.choices || !data.output.choices[0]) {
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
                     console.error('❌ 响应格式异常:', data);
                     throw new Error('API返回数据格式异常');
                 }
 
-                const reply = data.output.choices[0].message.content;
+                const reply = data.choices[0].message.content;
                 console.log('💬 AI回复内容长度:', reply.length);
                 return reply;
 
@@ -2008,15 +2010,11 @@ Vercel Serverless函数：
                     },
                     body: JSON.stringify({
                         model: 'qwen-turbo',
-                        input: {
-                            messages: [
-                                { role: 'user', content: testMessage }
-                            ]
-                        },
-                        parameters: {
-                            temperature: 0.7,
-                            max_tokens: 100
-                        }
+                        messages: [
+                            { role: 'user', content: testMessage }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 100
                     })
                 });
 
@@ -2049,7 +2047,8 @@ Vercel Serverless函数：
                         errorMsg += `错误原因: 请求过于频繁\n\n`;
                         errorMsg += `请稍后再试`;
                     } else {
-                        errorMsg += `错误信息: ${errorData.message || errorData.code || '未知错误'}\n\n`;
+                        const errInfo = errorData.error || errorData;
+                        errorMsg += `错误信息: ${errInfo.message || errInfo.code || '未知错误'}\n\n`;
                         errorMsg += `完整响应: ${JSON.stringify(errorData, null, 2)}`;
                     }
 
@@ -2060,8 +2059,8 @@ Vercel Serverless函数：
                 const data = await response.json();
                 console.log('✅ API响应成功:', data);
 
-                if (data.output && data.output.choices && data.output.choices[0]) {
-                    const reply = data.output.choices[0].message.content;
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    const reply = data.choices[0].message.content;
                     console.log('💬 AI回复:', reply);
 
                     alert(`✅ API连接测试成功！\n\n` +
