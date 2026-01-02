@@ -1639,8 +1639,8 @@
 - 总记录数：${filteredData.length} 条
 - 总支出：¥${total.toFixed(2)}
 - 时间范围：${currentFilters.dateStart || '最早'} 至 ${currentFilters.dateEnd || '最新'}
-- 筛选年份：${currentFilters.year.join(', ') || '全部'}
-- 筛选分类：${currentFilters.categories.join(', ') || '全部'}
+- 筛选年份：${Array.isArray(currentFilters.year) ? currentFilters.year.join(', ') : (currentFilters.year || '全部')}
+- 筛选分类：${Array.isArray(currentFilters.categories) ? currentFilters.categories.join(', ') : (currentFilters.categories || '全部')}
 
 各类别支出（前5）：
 ${Object.entries(categoryData)
