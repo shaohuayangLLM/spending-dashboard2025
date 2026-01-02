@@ -1538,6 +1538,20 @@
         const QWEN_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
         const CHAT_STORAGE_KEY = 'finance_chat_messages';
         const API_KEY_STORAGE = 'qwen_api_key';
+        const MODEL_STORAGE = 'qwen_model';
+
+        // 可用的模型列表
+        const QWEN_MODELS = [
+            { id: 'qwen-turbo', name: 'Qwen Turbo (超快响应)', desc: '速度快，成本低，适合日常对话' },
+            { id: 'qwen-plus', name: 'Qwen Plus (均衡性能)', desc: '性能平衡，适合大多数场景' },
+            { id: 'qwen-max', name: 'Qwen Max (最强性能)', desc: '能力最强，适合复杂任务' },
+            { id: 'qwen-long', name: 'Qwen Long (长文本)', desc: '支持长文本，适合大量数据分析' }
+        ];
+
+        // 获取当前选择的模型
+        function getCurrentModel() {
+            return localStorage.getItem(MODEL_STORAGE) || 'qwen-turbo';
+        }
 
         // 加载聊天历史
         function loadChatHistory() {
@@ -1663,7 +1677,7 @@ ${buildDataContext()}
 ${JSON.stringify(currentFilters, null, 2)}`;
 
             const requestData = {
-                model: 'qwen-turbo',
+                model: getCurrentModel(),
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userMessage }
@@ -1672,6 +1686,8 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 max_tokens: 1500,
                 top_p: 0.9
             };
+
+            console.log('🤖 使用模型:', getCurrentModel());
 
             console.log('📤 发送API请求到:', QWEN_API_URL);
             console.log('📝 请求数据:', JSON.stringify(requestData, null, 2));
@@ -1838,6 +1854,7 @@ ${JSON.stringify(currentFilters, null, 2)}`;
         function openAPIConfig() {
             const modal = document.getElementById('api-config-modal');
             const savedKey = localStorage.getItem(API_KEY_STORAGE) || '';
+            const savedModel = getCurrentModel();
 
             // 填充已保存的密钥
             const keyInput = document.getElementById('api-key-input');
@@ -1850,11 +1867,25 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 delete keyInput.dataset.actualKey;
             }
 
+            // 填充已保存的模型
+            const modelSelect = document.getElementById('model-select');
+            modelSelect.value = savedModel;
+            updateModelDescription(savedModel);
+
             // 显示模态框
             modal.classList.add('active');
 
             // 聚焦输入框
             setTimeout(() => keyInput.focus(), 100);
+        }
+
+        // 更新模型描述
+        function updateModelDescription(modelId) {
+            const modelDesc = document.getElementById('model-desc');
+            const model = QWEN_MODELS.find(m => m.id === modelId);
+            if (model) {
+                modelDesc.textContent = model.desc;
+            }
         }
 
         // 关闭API配置
@@ -1885,7 +1916,12 @@ ${JSON.stringify(currentFilters, null, 2)}`;
             // 保存密钥
             localStorage.setItem(API_KEY_STORAGE, key);
             keyInput.dataset.actualKey = key;
-            alert('✅ API密钥已保存');
+
+            // 保存模型选择
+            const modelSelect = document.getElementById('model-select');
+            localStorage.setItem(MODEL_STORAGE, modelSelect.value);
+
+            alert('✅ API密钥和模型选择已保存');
             closeAPIConfig();
         }
 
@@ -2009,7 +2045,7 @@ Vercel Serverless函数：
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'qwen-turbo',
+                        model: getCurrentModel(),
                         messages: [
                             { role: 'user', content: testMessage }
                         ],
@@ -2535,10 +2571,15 @@ Vercel Serverless函数：
             box-sizing: border-box;
         }
 
-        #api-key-input:focus {
+        #api-key-input:focus,
+        #model-select:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #model-select:hover {
+            border-color: #667eea;
         }
 
         .toggle-visibility {
@@ -2736,6 +2777,19 @@ Vercel Serverless函数：
                 </div>
 
                 <div class="config-section">
+                    <h3>🤖 AI模型选择</h3>
+                    <select id="model-select" onchange="updateModelDescription(this.value)" style="width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 0.95rem; background: white; cursor: pointer; transition: all 0.2s;">
+                        <option value="qwen-turbo">Qwen Turbo (超快响应) - 速度快，成本低</option>
+                        <option value="qwen-plus">Qwen Plus (均衡性能) - 性能平衡</option>
+                        <option value="qwen-max">Qwen Max (最强性能) - 能力最强</option>
+                        <option value="qwen-long">Qwen Long (长文本) - 支持大量数据</option>
+                    </select>
+                    <div style="margin-top: 8px; font-size: 0.85rem; color: #6b7280; line-height: 1.5;" id="model-desc">
+                        速度快，成本低，适合日常对话
+                    </div>
+                </div>
+
+                <div class="config-section">
                     <h3>📊 配置状态</h3>
                     <div class="api-status" id="api-status-display">
                         <div class="status-item">
@@ -2745,6 +2799,10 @@ Vercel Serverless函数：
                         <div class="status-item">
                             <span class="status-label">密钥格式</span>
                             <span class="status-value" id="key-format">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">当前模型</span>
+                            <span class="status-value" id="current-model">qwen-turbo</span>
                         </div>
                     </div>
                 </div>
@@ -2783,6 +2841,9 @@ Vercel Serverless函数：
             const apiKey = localStorage.getItem(API_KEY_STORAGE);
             const keyStatus = document.getElementById('key-status');
             const keyFormat = document.getElementById('key-format');
+            const currentModel = document.getElementById('current-model');
+            const currentModelName = getCurrentModel();
+            const modelInfo = QWEN_MODELS.find(m => m.id === currentModelName);
 
             if (apiKey) {
                 keyStatus.textContent = '已配置';
@@ -2792,6 +2853,11 @@ Vercel Serverless函数：
                 keyStatus.textContent = '未配置';
                 keyStatus.className = 'status-value not-configured';
                 keyFormat.textContent = '-';
+            }
+
+            // 更新当前模型显示
+            if (currentModel) {
+                currentModel.textContent = modelInfo ? modelInfo.name : currentModelName;
             }
         }
 
