@@ -1726,14 +1726,24 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 errorMsg += `错误信息: ${error.message}\n\n`;
 
                 if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    errorMsg += `可能原因：\n`;
-                    errorMsg += `1. 网络连接问题\n`;
-                    errorMsg += `2. 跨域CORS限制（浏览器控制台可能显示更多错误）\n`;
-                    errorMsg += `3. API服务地址无法访问\n\n`;
-                    errorMsg += `建议：\n`;
-                    errorMsg += `• 检查网络连接\n`;
-                    errorMsg += `• 打开浏览器开发者工具(F12)查看控制台错误\n`;
-                    errorMsg += `• 尝试使用🧪测试连接功能`;
+                    errorMsg += `⚠️ 检测到跨域CORS错误\n\n`;
+                    errorMsg += `这是浏览器的安全限制，从网页直接调用API会被阻止。\n\n`;
+                    errorMsg += `🔧 解决方案（任选其一）：\n\n`;
+                    errorMsg += `方案1：使用浏览器代理插件（最简单）\n`;
+                    errorMsg += `• Chrome: 安装 \"Allow CORS\" 插件\n`;
+                    errorMsg += `• Safari: 在开发菜单中禁用跨域限制\n`;
+                    errorMsg += `• Firefox: 安装 \"CORS Everywhere\" 插件\n\n`;
+                    errorMsg += `方案2：使用本地服务器测试\n`;
+                    errorMsg += `• 在本地运行HTML文件（file://协议）\n`;
+                    errorMsg += `• 使用 VSCode 的 Live Server 插件\n\n`;
+                    errorMsg += `方案3：部署到支持CORS的后端\n`;
+                    errorMsg += `• 使用Cloudflare Workers代理\n`;
+                    errorMsg += `• 使用Vercel/Netlify serverless函数\n`;
+                    errorMsg += `• 自建后端代理服务\n\n`;
+                    errorMsg += `💡 临时测试方法：\n`;
+                    errorMsg += `打开浏览器控制台(F12) → Network标签\n`;
+                    errorMsg += `查看失败的请求，确认是否有CORS错误\n\n`;
+                    errorMsg += `是否需要详细的CORS解决方案文档？`;
                 } else if (error.message.includes('401')) {
                     errorMsg += `可能原因：\n`;
                     errorMsg += `• API密钥无效或已过期\n`;
@@ -1901,6 +1911,70 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 '4. 复制API密钥（格式：sk-xxx...）\n\n' +
                 '5. 粘贴到配置对话框中\n\n' +
                 '💡 新用户通常有免费额度供测试使用');
+        }
+
+        // 显示CORS解决方案
+        function showCORSHelp() {
+            const corsHelp = `🔧 CORS跨域问题完整解决方案
+
+什么是CORS？
+CORS（跨域资源共享）是浏览器的安全机制，防止网页访问不同域名的API。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ 方案1：浏览器CORS插件（推荐，最简单）
+
+Chrome浏览器：
+1. 安装 "Allow CORS: Access-Control-Allow-Origin" 插件
+2. 点击插件图标，启用CORS
+3. 刷新页面即可使用
+
+Firefox浏览器：
+1. 安装 "CORS Everywhere" 插件
+2. 点击工具栏图标启用
+3. 刷新页面即可使用
+
+Safari浏览器：
+1. 菜单栏 → Safari → 偏好设置 → 高级
+2. 勾选"在菜单栏中显示开发菜单"
+3. 开发菜单 → 禁用跨域限制
+4. 刷新页面即可使用
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ 方案2：本地运行（测试推荐）
+
+使用VSCode：
+1. 安装 "Live Server" 插件
+2. 右键index.html → Open with Live Server
+3. 本地运行不受CORS限制
+
+直接打开文件：
+1. 在Finder中找到index.html
+2. 双击直接在浏览器打开
+3. file://协议不受CORS限制
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ 方案3：使用代理服务（生产环境）
+
+Cloudflare Workers（免费）：
+创建一个Worker代理API请求
+
+Vercel Serverless函数：
+部署一个API代理服务
+
+自建后端：
+使用Node.js/Python等搭建代理
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 建议：开发和测试时使用方案1或方案2
+正式部署时使用方案3
+
+需要更详细的指导？请查看控制台日志（F12）`;
+
+            alert(corsHelp);
         }
 
         // 测试API连接
@@ -2684,6 +2758,16 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                     4. 复制API密钥（格式：sk-xxx...）<br>
                     5. 粘贴到上方输入框中<br><br>
                     💡 新用户通常有免费额度供测试使用
+                </div>
+
+                <div class="help-text" style="background: #fef3c7; border-left-color: #f59e0b; color: #92400e;">
+                    <strong>⚠️ 重要提示：CORS跨域限制</strong>
+                    由于浏览器安全策略，从网页直接调用API可能被CORS限制阻止。<br><br>
+                    <strong>快速解决方案：</strong><br>
+                    • Chrome: 安装 "Allow CORS" 扩展<br>
+                    • Safari: 开发菜单 → 禁用跨域限制<br>
+                    • Firefox: 安装 "CORS Everywhere" 扩展<br><br>
+                    <a href="javascript:void(0)" onclick="showCORSHelp()" style="color: #d97706;">查看详细解决方案 →</a>
                 </div>
             </div>
             <div class="modal-footer">
