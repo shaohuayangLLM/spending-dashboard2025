@@ -1609,54 +1609,70 @@
 
         // 构建数据上下文
         function buildDataContext() {
-            const total = filteredData.reduce((sum, item) => sum + item.支出, 0);
+            // 使用 allData 而不是 filteredData，让AI基于完整数据回答
+            const total = allData.reduce((sum, item) => sum + item.支出, 0);
             const categoryData = {};
-            filteredData.forEach(item => {
+            allData.forEach(item => {
                 if (!categoryData[item.分类]) categoryData[item.分类] = 0;
                 categoryData[item.分类] += item.支出;
             });
 
-            // 获取最近5条记录（减少上下文长度）
-            const recentRecords = [...filteredData]
+            // 获取最近10条记录
+            const recentRecords = [...allData]
                 .sort((a, b) => new Date(b.日期) - new Date(a.日期))
-                .slice(0, 5);
+                .slice(0, 10);
 
-            // 月度统计（只取最近6个月）
+            // 月度统计
             const monthlyData = {};
-            filteredData.forEach(item => {
+            allData.forEach(item => {
                 const key = `${item.年份}-${String(item.月份).padStart(2, '0')}`;
                 if (!monthlyData[key]) monthlyData[key] = 0;
                 monthlyData[key] += item.支出;
             });
 
-            // 只取最近6个月的月度数据
+            // 只取最近12个月的月度数据
             const sortedMonths = Object.entries(monthlyData)
                 .sort((a, b) => a[0].localeCompare(b[0]))
-                .slice(-6);
+                .slice(-12);
+
+            // 年度统计
+            const yearlyData = {};
+            allData.forEach(item => {
+                if (!yearlyData[item.年份]) yearlyData[item.年份] = 0;
+                yearlyData[item.年份] += item.支出;
+            });
 
             const context = `
-当前消费数据概况：
-- 总记录数：${filteredData.length} 条
-- 总支出：¥${total.toFixed(2)}
-- 时间范围：${currentFilters.dateStart || '最早'} 至 ${currentFilters.dateEnd || '最新'}
-- 筛选年份：${Array.isArray(currentFilters.year) ? currentFilters.year.join(', ') : (currentFilters.year || '全部')}
-- 筛选分类：${Array.isArray(currentFilters.categories) ? currentFilters.categories.join(', ') : (currentFilters.categories || '全部')}
+=== 完整消费数据库 ===
+数据来源：记账管理.xlsx
+总记录数：${allData.length} 条
+总支出：¥${total.toFixed(2)}
 
-各类别支出（前5）：
-${Object.entries(categoryData)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([cat, amount]) => `  • ${cat}: ¥${amount.toFixed(2)}`)
+=== 时间范围 ===
+最早记录：${allData.length > 0 ? allData.sort((a, b) => new Date(a.日期) - new Date(b.日期))[0].日期 : '无'}
+最新记录：${allData.length > 0 ? allData.sort((a, b) => new Date(b.日期) - new Date(a.日期))[0].日期 : '无'}
+
+=== 年度支出汇总 ===
+${Object.entries(yearlyData)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([year, amount]) => `  ${year}年: ¥${amount.toFixed(2)}`)
     .join('\n')}
 
-最近6个月支出：
-${sortedMonths.map(([month, amount]) => `  • ${month}: ¥${amount.toFixed(2)}`).join('\n')}
+=== 各类别支出（全部） ===
+${Object.entries(categoryData)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, amount]) => `  ${cat}: ¥${amount.toFixed(2)} (${((amount/total)*100).toFixed(1)}%)`)
+    .join('\n')}
 
-最近5笔消费：
-${recentRecords.map(r => `  • ${r.日期} ${r.事项} ${r.分类} ¥${r.支出.toFixed(2)}`).join('\n')}
+=== 最近12个月支出趋势 ===
+${sortedMonths.map(([month, amount]) => `  ${month}: ¥${amount.toFixed(2)}`).join('\n')}
+
+=== 最近10笔消费记录 ===
+${recentRecords.map(r => `  ${r.日期} | ${r.事项} | ${r.分类} | ¥${r.支出.toFixed(2)}`).join('\n')}
             `.trim();
 
             console.log('📊 数据上下文长度:', context.length, '字符');
+            console.log('📊 使用数据源: allData (', allData.length, '条记录)');
 
             return context;
         }
@@ -1674,13 +1690,23 @@ ${recentRecords.map(r => `  • ${r.日期} ${r.事项} ${r.分类} ¥${r.支出
             console.log('✅ API密钥已配置 (前8位):', apiKey.substring(0, 8) + '...');
 
             // 构建对话上下文
-            const systemPrompt = `你是一个专业的财务数据分析助手，帮助用户分析个人消费数据。
-你可以回答关于消费趋势、分类支出、时间对比等问题。
+            const systemPrompt = `你是一个专业的财务数据分析助手，基于用户的完整Excel记账数据（记账管理.xlsx）来回答问题。
+
+【重要】你拥有完整的消费数据库，包括所有年份和类别的数据。请基于完整数据进行分析和回答。
+
+你可以：
+✓ 分析任意时间段的消费趋势
+✓ 对比不同年份、月份的支出差异
+✓ 统计各类别的消费占比和排名
+✓ 查找特定的消费记录
+✓ 计算平均消费、最大/最小支出等统计指标
+✓ 提供消费建议和节省技巧
+
 请用简洁、友好的语气回答，可以使用表情符号让回答更生动。
-数据上下文：
+
 ${buildDataContext()}
 
-用户当前筛选条件：
+【当前页面筛选条件】（仅影响页面显示，不影响你拥有的数据）
 ${JSON.stringify(currentFilters, null, 2)}`;
 
             const requestData = {
@@ -2761,11 +2787,15 @@ Vercel Serverless函数：
                 <div class="message-avatar">🤖</div>
                 <div class="message-content">你好！我是你的消费分析助手 💡
 
-你可以问我：
-• 总支出是多少？
-• 哪个类别花费最多？
-• 最近一个月的消费趋势
-• 某个分类的详细支出
+我已加载你的完整Excel记账数据（记账管理.xlsx），可以回答关于所有消费记录的问题。
+
+📊 你可以问我：
+• 总支出是多少？某年/某月呢？
+• 哪个类别花费最多？占多少比例？
+• 对比2024年和2025年的消费差异
+• 最近三个月的消费趋势
+• 找出某个分类的所有支出
+• 月平均消费、最大单笔支出等统计
 • 消费建议和节省技巧
 
 开始配置API密钥即可使用 👆</div>
