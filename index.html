@@ -1824,21 +1824,70 @@ ${JSON.stringify(currentFilters, null, 2)}`;
 
         // 打开API配置
         function openAPIConfig() {
+            const modal = document.getElementById('api-config-modal');
             const savedKey = localStorage.getItem(API_KEY_STORAGE) || '';
-            const newKey = prompt('请输入通义千问API密钥（格式：sk-xxx）：', savedKey);
 
-            if (newKey !== null) {
-                if (newKey.trim()) {
-                    if (!newKey.startsWith('sk-')) {
-                        alert('❌ API密钥格式不正确\n\n通义千问API密钥应该以 sk- 开头\n\n获取地址：https://dashscope.console.aliyun.com/');
-                        return;
-                    }
-                    localStorage.setItem(API_KEY_STORAGE, newKey.trim());
-                    alert('✅ API密钥已保存');
-                } else {
-                    localStorage.removeItem(API_KEY_STORAGE);
-                    alert('✅ API密钥已清除');
-                }
+            // 填充已保存的密钥
+            const keyInput = document.getElementById('api-key-input');
+            if (savedKey) {
+                // 显示遮罩的密钥
+                keyInput.value = savedKey;
+                keyInput.dataset.actualKey = savedKey;
+            } else {
+                keyInput.value = '';
+                delete keyInput.dataset.actualKey;
+            }
+
+            // 显示模态框
+            modal.classList.add('active');
+
+            // 聚焦输入框
+            setTimeout(() => keyInput.focus(), 100);
+        }
+
+        // 关闭API配置
+        function closeAPIConfig() {
+            document.getElementById('api-config-modal').classList.remove('active');
+        }
+
+        // 保存API配置
+        function saveAPIConfig() {
+            const keyInput = document.getElementById('api-key-input');
+            const key = keyInput.value.trim();
+
+            if (!key) {
+                // 清除密钥
+                localStorage.removeItem(API_KEY_STORAGE);
+                delete keyInput.dataset.actualKey;
+                alert('✅ API密钥已清除');
+                closeAPIConfig();
+                return;
+            }
+
+            // 验证格式
+            if (!key.startsWith('sk-')) {
+                alert('❌ API密钥格式不正确\n\n通义千问API密钥应该以 sk- 开头\n\n获取地址：https://dashscope.console.aliyun.com/');
+                return;
+            }
+
+            // 保存密钥
+            localStorage.setItem(API_KEY_STORAGE, key);
+            keyInput.dataset.actualKey = key;
+            alert('✅ API密钥已保存');
+            closeAPIConfig();
+        }
+
+        // 切换密码显示/隐藏
+        function toggleAPIKeyVisibility() {
+            const keyInput = document.getElementById('api-key-input');
+            const toggleBtn = document.getElementById('toggle-visibility-btn');
+
+            if (keyInput.type === 'password') {
+                keyInput.type = 'text';
+                toggleBtn.textContent = '👁️';
+            } else {
+                keyInput.type = 'password';
+                toggleBtn.textContent = '🔒';
             }
         }
 
@@ -2282,6 +2331,268 @@ ${JSON.stringify(currentFilters, null, 2)}`;
             .message-content {
                 max-width: 80%;
             }
+
+            #api-config-modal .modal-content {
+                width: 90%;
+                max-width: none;
+                margin: 20px;
+            }
+        }
+
+        /* API配置模态框 */
+        #api-config-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+
+        #api-config-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #api-config-modal .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 28px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .modal-body {
+            padding: 28px;
+        }
+
+        .config-section {
+            margin-bottom: 24px;
+        }
+
+        .config-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #api-key-input {
+            width: 100%;
+            padding: 14px 16px;
+            padding-right: 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        #api-key-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .toggle-visibility:hover {
+            opacity: 1;
+        }
+
+        .api-status {
+            padding: 16px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 1px solid #e5e7eb;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .status-label {
+            color: #6b7280;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .status-value.configured {
+            color: #10b981;
+        }
+
+        .status-value.not-configured {
+            color: #ef4444;
+        }
+
+        .help-text {
+            margin-top: 16px;
+            padding: 16px;
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: #1e40af;
+        }
+
+        .help-text strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .help-text a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .help-text a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-footer {
+            padding: 20px 28px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-test {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
         }
     </style>
 
@@ -2328,5 +2639,103 @@ ${JSON.stringify(currentFilters, null, 2)}`;
             <button class="send-btn" onclick="sendMessage()" title="发送">➤</button>
         </div>
     </div>
+
+    <!-- API配置模态框 -->
+    <div id="api-config-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔑 API配置</h2>
+                <button class="modal-close" onclick="closeAPIConfig()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <h3>🔑 通义千问API密钥</h3>
+                    <div class="input-group">
+                        <div class="input-wrapper">
+                            <input
+                                type="password"
+                                id="api-key-input"
+                                placeholder="请输入API密钥（格式：sk-xxx...）"
+                            >
+                            <button class="toggle-visibility" id="toggle-visibility-btn" onclick="toggleAPIKeyVisibility()" title="显示/隐藏">🔒</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>📊 配置状态</h3>
+                    <div class="api-status" id="api-status-display">
+                        <div class="status-item">
+                            <span class="status-label">API密钥状态</span>
+                            <span class="status-value not-configured" id="key-status">未配置</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">密钥格式</span>
+                            <span class="status-value" id="key-format">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-text">
+                    <strong>💡 如何获取API密钥？</strong>
+                    1. 访问 <a href="https://dashscope.console.aliyun.com/" target="_blank">阿里云DashScope控制台</a><br>
+                    2. 登录阿里云账号（如未注册需先注册）<br>
+                    3. 在控制台中创建API-KEY<br>
+                    4. 复制API密钥（格式：sk-xxx...）<br>
+                    5. 粘贴到上方输入框中<br><br>
+                    💡 新用户通常有免费额度供测试使用
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAPIConfig()">取消</button>
+                <button class="btn btn-test" onclick="testFromModal()">🧪 测试连接</button>
+                <button class="btn btn-primary" onclick="saveAPIConfig()">💾 保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 更新API状态显示
+        function updateAPIStatusDisplay() {
+            const apiKey = localStorage.getItem(API_KEY_STORAGE);
+            const keyStatus = document.getElementById('key-status');
+            const keyFormat = document.getElementById('key-format');
+
+            if (apiKey) {
+                keyStatus.textContent = '已配置';
+                keyStatus.className = 'status-value configured';
+                keyFormat.textContent = 'sk-***' + apiKey.slice(-8);
+            } else {
+                keyStatus.textContent = '未配置';
+                keyStatus.className = 'status-value not-configured';
+                keyFormat.textContent = '-';
+            }
+        }
+
+        // 从模态框测试连接
+        async function testFromModal() {
+            // 先保存当前的输入
+            const keyInput = document.getElementById('api-key-input');
+            const currentKey = keyInput.value.trim();
+
+            if (currentKey && currentKey.startsWith('sk-')) {
+                localStorage.setItem(API_KEY_STORAGE, currentKey);
+                keyInput.dataset.actualKey = currentKey;
+            }
+
+            // 更新状态显示
+            updateAPIStatusDisplay();
+
+            // 测试连接
+            await testAPIConnection();
+        }
+
+        // 在打开模态框时更新状态
+        const originalOpenAPIConfig = openAPIConfig;
+        openAPIConfig = function() {
+            originalOpenAPIConfig();
+            setTimeout(updateAPIStatusDisplay, 50);
+        };
+    </script>
 </body>
 </html>
