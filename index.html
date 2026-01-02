@@ -1644,9 +1644,13 @@ ${recentRecords.map(r => `  • ${r.日期} ${r.事项} ${r.分类} ¥${r.支出
         async function callQwenAPI(userMessage) {
             const apiKey = localStorage.getItem(API_KEY_STORAGE);
 
+            console.log('🔑 检查API密钥...');
             if (!apiKey) {
-                return '请先配置通义千问API密钥。点击右上角的设置图标进行配置。';
+                console.error('❌ 未配置API密钥');
+                return '❌ 请先配置通义千问API密钥\n\n点击聊天窗口右上角的🔑图标进行配置。\n\n💡 获取API密钥请点击❓图标查看帮助。';
             }
+
+            console.log('✅ API密钥已配置 (前8位):', apiKey.substring(0, 8) + '...');
 
             // 构建对话上下文
             const systemPrompt = `你是一个专业的财务数据分析助手，帮助用户分析个人消费数据。
@@ -1658,6 +1662,24 @@ ${buildDataContext()}
 用户当前筛选条件：
 ${JSON.stringify(currentFilters, null, 2)}`;
 
+            const requestData = {
+                model: 'qwen-turbo',
+                input: {
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userMessage }
+                    ]
+                },
+                parameters: {
+                    temperature: 0.7,
+                    max_tokens: 1500,
+                    top_p: 0.9
+                }
+            };
+
+            console.log('📤 发送API请求到:', QWEN_API_URL);
+            console.log('📝 请求数据:', JSON.stringify(requestData, null, 2));
+
             try {
                 const response = await fetch(QWEN_API_URL, {
                     method: 'POST',
@@ -1665,33 +1687,79 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                         'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        model: 'qwen-turbo',
-                        input: {
-                            messages: [
-                                { role: 'system', content: systemPrompt },
-                                { role: 'user', content: userMessage }
-                            ]
-                        },
-                        parameters: {
-                            temperature: 0.7,
-                            max_tokens: 1500,
-                            top_p: 0.9
-                        }
-                    })
+                    body: JSON.stringify(requestData)
                 });
+
+                console.log('📡 收到HTTP响应，状态码:', response.status);
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.message || `HTTP ${response.status}`);
+                    console.error('❌ API错误响应:', errorData);
+
+                    let errorDetail = `HTTP ${response.status}`;
+                    if (errorData.message) {
+                        errorDetail += `\n${errorData.message}`;
+                    }
+                    if (errorData.code) {
+                        errorDetail += `\n错误码: ${errorData.code}`;
+                    }
+
+                    throw new Error(errorDetail);
                 }
 
                 const data = await response.json();
-                return data.output.choices[0].message.content;
+                console.log('✅ API响应成功:', data);
+
+                if (!data.output || !data.output.choices || !data.output.choices[0]) {
+                    console.error('❌ 响应格式异常:', data);
+                    throw new Error('API返回数据格式异常');
+                }
+
+                const reply = data.output.choices[0].message.content;
+                console.log('💬 AI回复内容长度:', reply.length);
+                return reply;
 
             } catch (error) {
-                console.error('API调用失败:', error);
-                return `抱歉，调用AI服务失败：${error.message}\n\n请检查：\n1. API密钥是否正确\n2. 网络连接是否正常\n3. API服务是否可用`;
+                console.error('❌ API调用失败，错误详情:', error);
+
+                let errorMsg = `❌ 调用AI服务失败\n\n`;
+                errorMsg += `错误信息: ${error.message}\n\n`;
+
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMsg += `可能原因：\n`;
+                    errorMsg += `1. 网络连接问题\n`;
+                    errorMsg += `2. 跨域CORS限制（浏览器控制台可能显示更多错误）\n`;
+                    errorMsg += `3. API服务地址无法访问\n\n`;
+                    errorMsg += `建议：\n`;
+                    errorMsg += `• 检查网络连接\n`;
+                    errorMsg += `• 打开浏览器开发者工具(F12)查看控制台错误\n`;
+                    errorMsg += `• 尝试使用🧪测试连接功能`;
+                } else if (error.message.includes('401')) {
+                    errorMsg += `可能原因：\n`;
+                    errorMsg += `• API密钥无效或已过期\n`;
+                    errorMsg += `• API密钥格式错误\n\n`;
+                    errorMsg += `建议：\n`;
+                    errorMsg += `• 重新配置API密钥（点击🔑图标）\n`;
+                    errorMsg += `• 确认密钥以sk-开头`;
+                } else if (error.message.includes('403')) {
+                    errorMsg += `可能原因：\n`;
+                    errorMsg += `• API密钥权限不足\n`;
+                    errorMsg += `• 账户余额不足\n`;
+                    errorMsg += `• 未开通DashScope服务\n\n`;
+                    errorMsg += `建议：\n`;
+                    errorMsg += `• 检查阿里云账户余额\n`;
+                    errorMsg += `• 确认已开通DashScope服务`;
+                } else if (error.message.includes('429')) {
+                    errorMsg += `错误原因：请求过于频繁\n\n`;
+                    errorMsg += `建议：稍后再试`;
+                } else {
+                    errorMsg += `请检查：\n`;
+                    errorMsg += `1. API密钥是否正确\n`;
+                    errorMsg += `2. 网络连接是否正常\n`;
+                    errorMsg += `3. 打开浏览器控制台(F12)查看详细错误信息`;
+                }
+
+                return errorMsg;
             }
         }
 
@@ -1701,6 +1769,8 @@ ${JSON.stringify(currentFilters, null, 2)}`;
             const message = input.value.trim();
 
             if (!message) return;
+
+            console.log('📤 用户发送消息:', message);
 
             // 添加用户消息
             chatMessages.push({ role: 'user', content: message });
@@ -1720,7 +1790,13 @@ ${JSON.stringify(currentFilters, null, 2)}`;
             renderChatMessages();
 
             // 调用API
+            console.log('🔄 开始调用API...');
+            const startTime = Date.now();
             const response = await callQwenAPI(message);
+            const endTime = Date.now();
+
+            console.log(`✅ API调用完成，耗时: ${endTime - startTime}ms`);
+            console.log('📥 AI回复:', response.substring(0, 100) + '...');
 
             // 移除加载状态，添加真实回复
             chatMessages = chatMessages.filter(msg => !msg.isLoading);
@@ -1776,6 +1852,129 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 '4. 复制API密钥（格式：sk-xxx...）\n\n' +
                 '5. 粘贴到配置对话框中\n\n' +
                 '💡 新用户通常有免费额度供测试使用');
+        }
+
+        // 测试API连接
+        async function testAPIConnection() {
+            const apiKey = localStorage.getItem(API_KEY_STORAGE);
+
+            if (!apiKey) {
+                alert('❌ 未配置API密钥\n\n请先点击🔑图标配置API密钥');
+                return false;
+            }
+
+            // 显示测试中提示
+            const testBtn = document.getElementById('test-api-btn');
+            const originalText = testBtn.innerHTML;
+            testBtn.innerHTML = '⏳';
+            testBtn.disabled = true;
+
+            console.log('🔍 开始测试API连接...');
+            console.log('API URL:', QWEN_API_URL);
+            console.log('API Key (前8位):', apiKey.substring(0, 8) + '...');
+
+            try {
+                const testMessage = '你好，请回复"测试成功"';
+                const startTime = Date.now();
+
+                const response = await fetch(QWEN_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'qwen-turbo',
+                        input: {
+                            messages: [
+                                { role: 'user', content: testMessage }
+                            ]
+                        },
+                        parameters: {
+                            temperature: 0.7,
+                            max_tokens: 100
+                        }
+                    })
+                });
+
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+
+                console.log('📡 HTTP状态码:', response.status);
+                console.log('⏱️ 响应时间:', responseTime, 'ms');
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('❌ API错误响应:', errorData);
+
+                    let errorMsg = `❌ API连接失败\n\n`;
+                    errorMsg += `HTTP状态码: ${response.status}\n\n`;
+
+                    if (response.status === 401) {
+                        errorMsg += `错误原因: API密钥无效或已过期\n\n`;
+                        errorMsg += `请检查：\n`;
+                        errorMsg += `1. API密钥是否正确复制\n`;
+                        errorMsg += `2. 密钥是否已过期\n`;
+                        errorMsg += `3. 是否有足够的API额度`;
+                    } else if (response.status === 403) {
+                        errorMsg += `错误原因: 访问被拒绝\n\n`;
+                        errorMsg += `可能原因：\n`;
+                        errorMsg += `1. API密钥权限不足\n`;
+                        errorMsg += `2. 账户余额不足\n`;
+                        errorMsg += `3. API服务未开通`;
+                    } else if (response.status === 429) {
+                        errorMsg += `错误原因: 请求过于频繁\n\n`;
+                        errorMsg += `请稍后再试`;
+                    } else {
+                        errorMsg += `错误信息: ${errorData.message || errorData.code || '未知错误'}\n\n`;
+                        errorMsg += `完整响应: ${JSON.stringify(errorData, null, 2)}`;
+                    }
+
+                    alert(errorMsg);
+                    return false;
+                }
+
+                const data = await response.json();
+                console.log('✅ API响应成功:', data);
+
+                if (data.output && data.output.choices && data.output.choices[0]) {
+                    const reply = data.output.choices[0].message.content;
+                    console.log('💬 AI回复:', reply);
+
+                    alert(`✅ API连接测试成功！\n\n` +
+                        `⏱️ 响应时间: ${responseTime}ms\n` +
+                        `💬 测试回复: ${reply}\n\n` +
+                        `API配置正常，可以开始使用AI助手了！`);
+
+                    return true;
+                } else {
+                    console.error('❌ 响应格式异常:', data);
+                    alert(`❌ API响应格式异常\n\n` +
+                        `响应数据: ${JSON.stringify(data, null, 2)}`);
+                    return false;
+                }
+
+            } catch (error) {
+                console.error('❌ 网络错误:', error);
+
+                let errorMsg = `❌ 网络连接失败\n\n`;
+                errorMsg += `错误信息: ${error.message}\n\n`;
+                errorMsg += `可能原因：\n`;
+                errorMsg += `1. 网络连接不稳定\n`;
+                errorMsg += `2. 跨域CORS限制\n`;
+                errorMsg += `3. API服务地址无法访问\n\n`;
+                errorMsg += `请检查：\n`;
+                errorMsg += `- 网络连接是否正常\n`;
+                errorMsg += `- 浏览器控制台是否有CORS错误\n`;
+                errorMsg += `- API地址是否正确: ${QWEN_API_URL}`;
+
+                alert(errorMsg);
+                return false;
+
+            } finally {
+                testBtn.innerHTML = originalText;
+                testBtn.disabled = false;
+            }
         }
 
         // ==================== 初始化 ====================
@@ -2097,6 +2296,7 @@ ${JSON.stringify(currentFilters, null, 2)}`;
                 <span>消费助手</span>
             </div>
             <div class="chat-header-actions">
+                <button class="chat-header-btn" id="test-api-btn" onclick="testAPIConnection()" title="测试API连接">🧪</button>
                 <button class="chat-header-btn" onclick="openAPIConfig()" title="配置API密钥">🔑</button>
                 <button class="chat-header-btn" onclick="showAPIHelp()" title="获取帮助">❓</button>
                 <button class="chat-header-btn" onclick="clearChat()" title="清空聊天">🗑️</button>
