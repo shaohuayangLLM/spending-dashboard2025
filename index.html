@@ -1532,10 +1532,601 @@
             }
         }
 
+        // ==================== AI聊天助手 ====================
+        let chatMessages = [];
+        let isChatOpen = false;
+        const QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+        const CHAT_STORAGE_KEY = 'finance_chat_messages';
+        const API_KEY_STORAGE = 'qwen_api_key';
+
+        // 加载聊天历史
+        function loadChatHistory() {
+            const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+            if (stored) {
+                try {
+                    chatMessages = JSON.parse(stored);
+                    renderChatMessages();
+                } catch (e) {
+                    console.error('加载聊天历史失败:', e);
+                    chatMessages = [];
+                }
+            }
+        }
+
+        // 保存聊天历史
+        function saveChatHistory() {
+            localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages));
+        }
+
+        // 切换聊天窗口
+        function toggleChat() {
+            isChatOpen = !isChatOpen;
+            const chatWindow = document.getElementById('chat-window');
+            const chatButton = document.getElementById('chat-button');
+
+            if (isChatOpen) {
+                chatWindow.classList.add('active');
+                chatButton.style.transform = 'scale(0)';
+                document.getElementById('chat-input').focus();
+            } else {
+                chatWindow.classList.remove('active');
+                chatButton.style.transform = 'scale(1)';
+            }
+        }
+
+        // 关闭聊天窗口
+        function closeChat() {
+            isChatOpen = false;
+            document.getElementById('chat-window').classList.remove('active');
+            document.getElementById('chat-button').style.transform = 'scale(1)';
+        }
+
+        // 渲染聊天消息
+        function renderChatMessages() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = chatMessages.map(msg => `
+                <div class="chat-message ${msg.role}">
+                    <div class="message-avatar">${msg.role === 'user' ? '👤' : '🤖'}</div>
+                    <div class="message-content">${msg.content}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 构建数据上下文
+        function buildDataContext() {
+            const total = filteredData.reduce((sum, item) => sum + item.支出, 0);
+            const categoryData = {};
+            filteredData.forEach(item => {
+                if (!categoryData[item.分类]) categoryData[item.分类] = 0;
+                categoryData[item.分类] += item.支出;
+            });
+
+            // 获取最近10条记录
+            const recentRecords = [...filteredData]
+                .sort((a, b) => new Date(b.日期) - new Date(a.日期))
+                .slice(0, 10);
+
+            // 月度统计
+            const monthlyData = {};
+            filteredData.forEach(item => {
+                const key = `${item.年份}-${String(item.月份).padStart(2, '0')}`;
+                if (!monthlyData[key]) monthlyData[key] = 0;
+                monthlyData[key] += item.支出;
+            });
+
+            return `
+当前消费数据概况：
+- 总记录数：${filteredData.length} 条
+- 总支出：¥${total.toFixed(2)}
+- 时间范围：${currentFilters.dateStart || '最早'} 至 ${currentFilters.dateEnd || '最新'}
+- 筛选年份：${currentFilters.year.join(', ') || '全部'}
+- 筛选分类：${currentFilters.categories.join(', ') || '全部'}
+
+各类别支出：
+${Object.entries(categoryData)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cat, amount]) => `  • ${cat}: ¥${amount.toFixed(2)}`)
+    .join('\n')}
+
+月度支出趋势：
+${Object.entries(monthlyData)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, amount]) => `  • ${month}: ¥${amount.toFixed(2)}`)
+    .join('\n')}
+
+最近10笔消费：
+${recentRecords.map(r => `  • ${r.日期} ${r.事项} ${r.分类} ¥${r.支出.toFixed(2)}`).join('\n')}
+            `.trim();
+        }
+
+        // 调用Qwen API
+        async function callQwenAPI(userMessage) {
+            const apiKey = localStorage.getItem(API_KEY_STORAGE);
+
+            if (!apiKey) {
+                return '请先配置通义千问API密钥。点击右上角的设置图标进行配置。';
+            }
+
+            // 构建对话上下文
+            const systemPrompt = `你是一个专业的财务数据分析助手，帮助用户分析个人消费数据。
+你可以回答关于消费趋势、分类支出、时间对比等问题。
+请用简洁、友好的语气回答，可以使用表情符号让回答更生动。
+数据上下文：
+${buildDataContext()}
+
+用户当前筛选条件：
+${JSON.stringify(currentFilters, null, 2)}`;
+
+            try {
+                const response = await fetch(QWEN_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'qwen-turbo',
+                        input: {
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: userMessage }
+                            ]
+                        },
+                        parameters: {
+                            temperature: 0.7,
+                            max_tokens: 1500,
+                            top_p: 0.9
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.output.choices[0].message.content;
+
+            } catch (error) {
+                console.error('API调用失败:', error);
+                return `抱歉，调用AI服务失败：${error.message}\n\n请检查：\n1. API密钥是否正确\n2. 网络连接是否正常\n3. API服务是否可用`;
+            }
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // 添加用户消息
+            chatMessages.push({ role: 'user', content: message });
+            renderChatMessages();
+            saveChatHistory();
+            input.value = '';
+
+            // 显示加载状态
+            const loadingId = 'loading-' + Date.now();
+            chatMessages.push({
+                role: 'assistant',
+                content: `<div id="${loadingId}" class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>`,
+                isLoading: true
+            });
+            renderChatMessages();
+
+            // 调用API
+            const response = await callQwenAPI(message);
+
+            // 移除加载状态，添加真实回复
+            chatMessages = chatMessages.filter(msg => !msg.isLoading);
+            chatMessages.push({ role: 'assistant', content: response });
+            renderChatMessages();
+            saveChatHistory();
+        }
+
+        // 处理回车发送
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 清空聊天
+        function clearChat() {
+            if (confirm('确定要清空所有聊天记录吗？')) {
+                chatMessages = [];
+                saveChatHistory();
+                renderChatMessages();
+            }
+        }
+
+        // 打开API配置
+        function openAPIConfig() {
+            const savedKey = localStorage.getItem(API_KEY_STORAGE) || '';
+            const newKey = prompt('请输入通义千问API密钥（格式：sk-xxx）：', savedKey);
+
+            if (newKey !== null) {
+                if (newKey.trim()) {
+                    if (!newKey.startsWith('sk-')) {
+                        alert('❌ API密钥格式不正确\n\n通义千问API密钥应该以 sk- 开头\n\n获取地址：https://dashscope.console.aliyun.com/');
+                        return;
+                    }
+                    localStorage.setItem(API_KEY_STORAGE, newKey.trim());
+                    alert('✅ API密钥已保存');
+                } else {
+                    localStorage.removeItem(API_KEY_STORAGE);
+                    alert('✅ API密钥已清除');
+                }
+            }
+        }
+
+        // 显示API配置帮助
+        function showAPIHelp() {
+            alert('🔑 通义千问API密钥获取指南\n\n' +
+                '1. 访问阿里云DashScope控制台\n' +
+                '   https://dashscope.console.aliyun.com/\n\n' +
+                '2. 登录阿里云账号（如未注册需先注册）\n\n' +
+                '3. 在控制台中创建API-KEY\n\n' +
+                '4. 复制API密钥（格式：sk-xxx...）\n\n' +
+                '5. 粘贴到配置对话框中\n\n' +
+                '💡 新用户通常有免费额度供测试使用');
+        }
+
         // ==================== 初始化 ====================
         window.onload = function() {
             checkLoginStatus();
+            loadChatHistory();
         };
     </script>
+
+    <!-- AI聊天界面 -->
+    <style>
+        /* 聊天按钮 */
+        #chat-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        #chat-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+        }
+
+        /* 聊天窗口 */
+        #chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 400px;
+            max-width: calc(100vw - 60px);
+            height: 600px;
+            max-height: calc(100vh - 120px);
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        #chat-window.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+
+        /* 聊天头部 */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .chat-header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .chat-header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-header-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .chat-header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* 聊天消息区域 */
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 12px;
+            animation: messageSlideIn 0.3s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .chat-message.assistant .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .chat-message.user .message-avatar {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .chat-message.assistant .message-content {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .chat-message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* 输入区域动画 */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        /* 聊天输入区域 */
+        .chat-input-area {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            resize: none;
+            max-height: 120px;
+            min-height: 48px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        #chat-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 滚动条样式 */
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            #chat-button {
+                bottom: 20px;
+                right: 20px;
+                width: 56px;
+                height: 56px;
+            }
+
+            #chat-window {
+                bottom: 80px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+                max-width: none;
+                height: calc(100vh - 100px);
+                max-height: none;
+            }
+
+            .message-content {
+                max-width: 80%;
+            }
+        }
+    </style>
+
+    <!-- 聊天按钮 -->
+    <div id="chat-button" onclick="toggleChat()" title="AI助手">💬</div>
+
+    <!-- 聊天窗口 -->
+    <div id="chat-window">
+        <div class="chat-header">
+            <div class="chat-header-title">
+                <span>🤖</span>
+                <span>消费助手</span>
+            </div>
+            <div class="chat-header-actions">
+                <button class="chat-header-btn" onclick="openAPIConfig()" title="配置API密钥">🔑</button>
+                <button class="chat-header-btn" onclick="showAPIHelp()" title="获取帮助">❓</button>
+                <button class="chat-header-btn" onclick="clearChat()" title="清空聊天">🗑️</button>
+                <button class="chat-header-btn" onclick="closeChat()" title="关闭">✕</button>
+            </div>
+        </div>
+        <div id="chat-messages">
+            <div class="chat-message assistant">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">你好！我是你的消费分析助手 💡
+
+你可以问我：
+• 总支出是多少？
+• 哪个类别花费最多？
+• 最近一个月的消费趋势
+• 某个分类的详细支出
+• 消费建议和节省技巧
+
+开始配置API密钥即可使用 👆</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <textarea
+                id="chat-input"
+                placeholder="输入你的问题..."
+                rows="1"
+                onkeypress="handleKeyPress(event)"
+            ></textarea>
+            <button class="send-btn" onclick="sendMessage()" title="发送">➤</button>
+        </div>
+    </div>
 </body>
 </html>
