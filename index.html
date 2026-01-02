@@ -1616,12 +1616,12 @@
                 categoryData[item.分类] += item.支出;
             });
 
-            // 获取最近10条记录
+            // 获取最近5条记录（减少上下文长度）
             const recentRecords = [...filteredData]
                 .sort((a, b) => new Date(b.日期) - new Date(a.日期))
-                .slice(0, 10);
+                .slice(0, 5);
 
-            // 月度统计
+            // 月度统计（只取最近6个月）
             const monthlyData = {};
             filteredData.forEach(item => {
                 const key = `${item.年份}-${String(item.月份).padStart(2, '0')}`;
@@ -1629,7 +1629,12 @@
                 monthlyData[key] += item.支出;
             });
 
-            return `
+            // 只取最近6个月的月度数据
+            const sortedMonths = Object.entries(monthlyData)
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .slice(-6);
+
+            const context = `
 当前消费数据概况：
 - 总记录数：${filteredData.length} 条
 - 总支出：¥${total.toFixed(2)}
@@ -1637,21 +1642,23 @@
 - 筛选年份：${currentFilters.year.join(', ') || '全部'}
 - 筛选分类：${currentFilters.categories.join(', ') || '全部'}
 
-各类别支出：
+各类别支出（前5）：
 ${Object.entries(categoryData)
     .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
     .map(([cat, amount]) => `  • ${cat}: ¥${amount.toFixed(2)}`)
     .join('\n')}
 
-月度支出趋势：
-${Object.entries(monthlyData)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([month, amount]) => `  • ${month}: ¥${amount.toFixed(2)}`)
-    .join('\n')}
+最近6个月支出：
+${sortedMonths.map(([month, amount]) => `  • ${month}: ¥${amount.toFixed(2)}`).join('\n')}
 
-最近10笔消费：
+最近5笔消费：
 ${recentRecords.map(r => `  • ${r.日期} ${r.事项} ${r.分类} ¥${r.支出.toFixed(2)}`).join('\n')}
             `.trim();
+
+            console.log('📊 数据上下文长度:', context.length, '字符');
+
+            return context;
         }
 
         // 调用Qwen API
@@ -1817,20 +1824,41 @@ ${JSON.stringify(currentFilters, null, 2)}`;
             });
             renderChatMessages();
 
-            // 调用API
-            console.log('🔄 开始调用API...');
-            const startTime = Date.now();
-            const response = await callQwenAPI(message);
-            const endTime = Date.now();
+            try {
+                // 调用API
+                console.log('🔄 开始调用API...');
+                const startTime = Date.now();
+                const response = await callQwenAPI(message);
+                const endTime = Date.now();
 
-            console.log(`✅ API调用完成，耗时: ${endTime - startTime}ms`);
-            console.log('📥 AI回复:', response.substring(0, 100) + '...');
+                console.log(`✅ API调用完成，耗时: ${endTime - startTime}ms`);
+                console.log('📥 AI回复类型:', typeof response);
+                console.log('📥 AI回复长度:', response?.length || 0);
+                console.log('📥 AI回复前100字符:', response?.substring(0, 100) || '(empty)');
 
-            // 移除加载状态，添加真实回复
-            chatMessages = chatMessages.filter(msg => !msg.isLoading);
-            chatMessages.push({ role: 'assistant', content: response });
-            renderChatMessages();
-            saveChatHistory();
+                // 检查回复是否为空或出错
+                if (!response || response.trim() === '') {
+                    throw new Error('AI返回空回复');
+                }
+
+                // 移除加载状态，添加真实回复
+                chatMessages = chatMessages.filter(msg => !msg.isLoading);
+                chatMessages.push({ role: 'assistant', content: response });
+                renderChatMessages();
+                saveChatHistory();
+
+            } catch (error) {
+                console.error('❌ 发送消息失败:', error);
+
+                // 移除加载状态
+                chatMessages = chatMessages.filter(msg => !msg.isLoading);
+
+                // 显示错误消息
+                const errorMsg = `❌ 消息发送失败\n\n错误: ${error.message}\n\n请检查：\n1. 控制台(F12)查看详细错误\n2. API配置是否正确\n3. 网络连接是否正常`;
+                chatMessages.push({ role: 'assistant', content: errorMsg });
+                renderChatMessages();
+                saveChatHistory();
+            }
         }
 
         // 处理回车发送
